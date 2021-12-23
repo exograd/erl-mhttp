@@ -16,7 +16,7 @@
 
 -behaviour(c_sup).
 
--export([start_link/0, start_pool/2]).
+-export([start_link/0, start_pool/2, stop_pool/1]).
 -export([children/0]).
 
 -spec start_link() -> c_sup:start_ret().
@@ -27,6 +27,10 @@ start_link() ->
         c_sup:start_child_ret().
 start_pool(Id, Options) ->
   c_sup:start_child(?MODULE, Id, pool_child_spec(Id, Options)).
+
+-spec stop_pool(mhttp:pool_id()) -> ok.
+stop_pool(Id) ->
+  c_sup:stop_and_remove_child(?MODULE, Id).
 
 -spec children() -> c_sup:child_specs().
 children() ->
