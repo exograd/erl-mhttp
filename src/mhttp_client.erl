@@ -22,7 +22,7 @@
 -export([init/1, terminate/2,
          handle_call/3, handle_cast/2, handle_info/2, handle_continue/2]).
 
--export_type([options/0, tcp_option/0, tls_option/0]).
+-export_type([options/0, tcp_option/0, tls_option/0, request_hook/0]).
 
 -type options() ::
         #{host => uri:host(),
@@ -35,10 +35,14 @@
           header => mhttp:header(),
           compression => boolean(),
           log_requests => boolean(),
-          ca_certificate_bundle_path => file:name_all() | undefined}.
+          ca_certificate_bundle_path => file:name_all() | undefined,
+          request_hook => request_hook()}.
 
 -type tcp_option() :: gen_tcp:connect_option().
 -type tls_option() :: ssl:tls_client_option().
+
+-type request_hook() ::
+        fun((mhttp:request(), mhttp:response(), integer()) -> ok).
 
 -type state() ::
         #{pool := mhttp:pool_id(),
@@ -213,7 +217,9 @@ send_request_1(Request0, RequestOptions, State) ->
   send(State, mhttp_proto:encode_request(Request)),
   set_socket_active(State, false),
   {State2, Response} = read_response(State),
-  log_request(Request, Response, StartTime, State2),
+  RequestTime = erlang:system_time(microsecond) - StartTime,
+  call_request_hook(Request, Response, RequestTime, State),
+  log_request(Request, Response, RequestTime, State2),
   case maybe_upgrade(Request, RequestOptions, Response, State2) of
     {upgraded, Pid, State3} ->
       {{ok, {upgraded, Response, Pid}}, State3};
@@ -221,6 +227,20 @@ send_request_1(Request0, RequestOptions, State) ->
       set_socket_active(State2, true),
       {{ok, Response}, State2}
   end.
+
+-spec call_request_hook(mhttp:request(), mhttp:response(), integer(),
+                        state()) ->
+        ok.
+call_request_hook(Request, Response, RequestTime,
+                  #{options := #{request_hook := Hook}}) ->
+  try
+    Hook(Request, Response, RequestTime)
+  catch
+    Type:Reason ->
+      ?LOG_ERROR("send request hook ~s: ~ts", [Type, Reason])
+  end;
+call_request_hook(_, _, _, _) ->
+  ok.
 
 -spec finalize_request(state(), mhttp:request(), mhttp:request_options()) ->
         mhttp:request().
@@ -277,13 +297,12 @@ host_finalization_fun(Options) ->
       mhttp_request:ensure_host(Request, Host, Port, Transport)
   end.
 
--spec log_request(mhttp:request(), mhttp:response(), StartTime :: integer(),
-                  state()) -> ok.
-log_request(Request, Response, StartTime,
+-spec log_request(mhttp:request(), mhttp:response(), integer(), state()) -> ok.
+log_request(Request, Response, RequestTime,
             #{pool := PoolId, options := Options}) ->
   case maps:get(log_requests, Options, true) of
     true ->
-      mhttp_log:log_outgoing_request(Request, Response, StartTime, PoolId,
+      mhttp_log:log_outgoing_request(Request, Response, RequestTime, PoolId,
                                      log_domain()),
       ok;
     false ->

@@ -22,6 +22,7 @@
     Domain :: [atom()].
 log_incoming_request(Request, Response, Context, Server, Domain) ->
   StartTime = maps:get(start_time, Context),
+  RequestTime = erlang:system_time(microsecond) - StartTime,
   Address = maps:get(real_client_address, Context),
   RequestId = maps:get(request_id, Context),
   Data = #{address => inet:ntoa(Address),
@@ -31,29 +32,26 @@ log_incoming_request(Request, Response, Context, Server, Domain) ->
             _ -> Data#{server => Server}
           end,
   Event = [mhttp, request, in],
-  log_request(Request, Response, StartTime, Domain, Event, Data2).
+  log_request(Request, Response, RequestTime, Domain, Event, Data2).
 
--spec log_outgoing_request(mhttp:request(), mhttp:response(), StartTime,
+-spec log_outgoing_request(mhttp:request(), mhttp:response(), integer(),
                            Pool, Domain) -> ok when
-    StartTime :: integer(),
     Pool :: mhttp:pool_id() | undefined,
     Domain :: [atom()].
-log_outgoing_request(Request, Response, StartTime, Pool, Domain) ->
+log_outgoing_request(Request, Response, RequestTime, Pool, Domain) ->
   Data = case Pool of
            undefined -> #{};
            _ -> #{pool => Pool}
          end,
   Event = [mhttp, request, out],
-  log_request(Request, Response, StartTime, Domain, Event, Data).
+  log_request(Request, Response, RequestTime, Domain, Event, Data).
 
--spec log_request(mhttp:request(), mhttp:response(), StartTime, Domain, Event,
+-spec log_request(mhttp:request(), mhttp:response(), integer(), Domain, Event,
                   ExtraData) -> ok when
-    StartTime :: integer(),
     Domain :: [atom()],
     Event :: [atom()],
     ExtraData :: #{atom() := term()}.
-log_request(Request, Response, StartTime, Domain, Event, ExtraData) ->
-  Now = erlang:system_time(microsecond),
+log_request(Request, Response, RequestTime, Domain, Event, ExtraData) ->
   MethodString = mhttp_proto:encode_method(mhttp_request:method(Request)),
   Target = mhttp_request:target_string(Request),
   Status = mhttp_response:status(Response),
@@ -64,24 +62,23 @@ log_request(Request, Response, StartTime, Domain, Event, ExtraData) ->
                error ->
                  iolist_size(mhttp_response:body(Response))
              end,
-  ProcessingTime = Now - StartTime,
   Data = #{domain => Domain,
            event => Event,
            status => Status,
-           processing_time => ProcessingTime},
+           request_time => RequestTime},
   logger:info("~s ~s ~b ~ts ~ts",
               [MethodString, Target, Status,
                format_data_size(BodySize),
-               format_processing_time(ProcessingTime)],
+               format_request_time(RequestTime)],
               maps:merge(Data, ExtraData)),
   ok.
 
--spec format_processing_time(Microseconds :: non_neg_integer()) -> binary().
-format_processing_time(Microseconds) when Microseconds < 1_000 ->
+-spec format_request_time(Microseconds :: non_neg_integer()) -> binary().
+format_request_time(Microseconds) when Microseconds < 1_000 ->
   <<(integer_to_binary(Microseconds))/binary, "μs"/utf8>>;
-format_processing_time(Microseconds) when Microseconds > 1_000_000 ->
+format_request_time(Microseconds) when Microseconds > 1_000_000 ->
   <<(float_to_binary(Microseconds / 1.0e6, [{decimals, 1}]))/binary, "s">>;
-format_processing_time(Microseconds) ->
+format_request_time(Microseconds) ->
   <<(float_to_binary(Microseconds / 1.0e3, [{decimals, 1}]))/binary, "ms">>.
 
 -spec format_data_size(Bytes :: non_neg_integer()) -> binary().
