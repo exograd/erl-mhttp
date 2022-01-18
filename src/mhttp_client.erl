@@ -238,7 +238,7 @@ call_request_hook(Request, Response, RequestTime,
     Hook(Request, Response, RequestTime, Pool)
   catch
     Type:Reason ->
-      ?LOG_ERROR("send request hook ~s: ~ts", [Type, Reason])
+      ?LOG_ERROR("request hook ~s: ~ts", [Type, Reason])
   end;
 call_request_hook(_, _, _, _) ->
   ok.
