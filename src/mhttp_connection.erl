@@ -21,7 +21,7 @@
 -export([start_link/1]).
 -export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2]).
 
--export_type([options/0, request_hook/0]).
+-export_type([options/0]).
 
 %% XXX We need to keep track of the server id for request logging. Using
 %% options to store the server id is a hack, we need a better way.
@@ -32,12 +32,8 @@
           address => inet:ip_address(),
           port => inet:port_number(),
           log_requests => boolean(),
-          request_hook => request_hook(),
+          request_hook => mhttp_server:request_hook(),
           server => mhttp:server_id()}.
-
--type request_hook() ::
-        fun((mhttp:request(), mhttp:response(), integer(),
-             mhttp:server_id()) -> ok).
 
 -type state() ::
         #{options := options(),

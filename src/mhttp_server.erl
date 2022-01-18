@@ -22,7 +22,7 @@
          set_router/2, find_route/3]).
 -export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2]).
 
--export_type([name/0, ref/0, options/0]).
+-export_type([name/0, ref/0, options/0, request_hook/0]).
 
 -type name() :: c_gen_server:name().
 -type ref() :: c_gen_server:ref().
@@ -35,7 +35,12 @@
           route_not_found_handler => mhttp:handler(),
           service_unavailable_handler => mhttp:handler(),
           error_handler => mhttp:error_handler(),
-          idle_timeout => pos_integer()}.
+          idle_timeout => pos_integer(),
+          request_hook => request_hook()}.
+
+-type request_hook() ::
+        fun((mhttp:request(), mhttp:response(), integer(),
+             mhttp:server_id()) -> ok).
 
 -type state() ::
         #{id := mhttp:server_id(),
@@ -167,7 +172,8 @@ connection_options(#{id := Id, options := Options}) ->
   ErrorHandler = maps:get(error_handler, Options,
                           fun mhttp_handlers:error_handler/4),
   IdleTimeout = maps:get(idle_timeout, Options, 10_000),
-  #{server_pid => self(),
-    error_handler => ErrorHandler,
-    idle_timeout => IdleTimeout,
-    server => Id}.
+  ConnectionOptions0 = maps:with([request_hook], Options),
+  ConnectionOptions0#{server_pid => self(),
+                      error_handler => ErrorHandler,
+                      idle_timeout => IdleTimeout,
+                      server => Id}.
