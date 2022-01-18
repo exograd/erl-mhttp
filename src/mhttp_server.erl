@@ -27,19 +27,21 @@
 -type name() :: c_gen_server:name().
 -type ref() :: c_gen_server:ref().
 
--type options() :: #{address => inet:socket_address(),
-                     port => inet:port_number(),
-                     listen_options => [gen_tcp:listen_option()],
-                     nb_acceptors => pos_integer(),
-                     route_not_found_handler => mhttp:handler(),
-                     service_unavailable_handler => mhttp:handler(),
-                     error_handler => mhttp:error_handler(),
-                     idle_timeout => pos_integer()}.
+-type options() ::
+        #{address => inet:socket_address(),
+          port => inet:port_number(),
+          listen_options => [gen_tcp:listen_option()],
+          nb_acceptors => pos_integer(),
+          route_not_found_handler => mhttp:handler(),
+          service_unavailable_handler => mhttp:handler(),
+          error_handler => mhttp:error_handler(),
+          idle_timeout => pos_integer()}.
 
--type state() :: #{id := mhttp:server_id(),
-                   options := options(),
-                   socket := inet:socket(),
-                   router => mhttp_router:router()}.
+-type state() ::
+        #{id := mhttp:server_id(),
+          options := options(),
+          socket := inet:socket(),
+          router => mhttp_router:router()}.
 
 -spec process_name(mhttp:server_id()) -> atom().
 process_name(Id) ->

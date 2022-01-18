@@ -25,18 +25,20 @@
 
 %% XXX We need to keep track of the server id for request logging. Using
 %% options to store the server id is a hack, we need a better way.
--type options() :: #{server_pid := pid(),
-                     error_handler := mhttp:error_handler(),
-                     idle_timeout := pos_integer(),
-                     address => inet:ip_address(),
-                     port => inet:port_number(),
-                     log_requests => boolean(),
-                     server => mhttp:server_id()}.
+-type options() ::
+        #{server_pid := pid(),
+          error_handler := mhttp:error_handler(),
+          idle_timeout := pos_integer(),
+          address => inet:ip_address(),
+          port => inet:port_number(),
+          log_requests => boolean(),
+          server => mhttp:server_id()}.
 
--type state() :: #{options := options(),
-                   socket => inet:socket(),
-                   parser := mhttp_parser:parser(),
-                   idle_timer => reference()}.
+-type state() ::
+        #{options := options(),
+          socket => inet:socket(),
+          parser := mhttp_parser:parser(),
+          idle_timer => reference()}.
 
 -spec start_link(options()) -> Result when
     Result :: {ok, pid()} | ignore | {error, term()}.
