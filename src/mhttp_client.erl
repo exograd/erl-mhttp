@@ -42,7 +42,8 @@
 -type tls_option() :: ssl:tls_client_option().
 
 -type request_hook() ::
-        fun((mhttp:request(), mhttp:response(), integer()) -> ok).
+        fun((mhttp:request(), mhttp:response(), integer(),
+             mhttp:pool_id()) -> ok).
 
 -type state() ::
         #{pool := mhttp:pool_id(),
@@ -232,9 +233,9 @@ send_request_1(Request0, RequestOptions, State) ->
                         state()) ->
         ok.
 call_request_hook(Request, Response, RequestTime,
-                  #{options := #{request_hook := Hook}}) ->
+                  #{pool := Pool, options := #{request_hook := Hook}}) ->
   try
-    Hook(Request, Response, RequestTime)
+    Hook(Request, Response, RequestTime, Pool)
   catch
     Type:Reason ->
       ?LOG_ERROR("send request hook ~s: ~ts", [Type, Reason])
