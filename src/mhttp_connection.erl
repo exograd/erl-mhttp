@@ -21,7 +21,7 @@
 -export([start_link/1]).
 -export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2]).
 
--export_type([options/0]).
+-export_type([options/0, request_hook/0]).
 
 %% XXX We need to keep track of the server id for request logging. Using
 %% options to store the server id is a hack, we need a better way.
@@ -32,7 +32,12 @@
           address => inet:ip_address(),
           port => inet:port_number(),
           log_requests => boolean(),
+          request_hook => request_hook(),
           server => mhttp:server_id()}.
+
+-type request_hook() ::
+        fun((mhttp:request(), mhttp:response(), integer(),
+             mhttp:server_id()) -> ok).
 
 -type state() ::
         #{options := options(),
@@ -136,6 +141,7 @@ handle_request(Request, State = #{options := Options}) ->
     end,
   Response = finalize_response(State, Response0),
   log_request(Request, Response, Context2, State),
+  call_request_hook(Request, Response, Context2, State),
   send_response(Response, State),
   State.
 
@@ -238,3 +244,18 @@ log_request(Request, Response, Context, #{options := Options}) ->
 -spec log_domain() -> [atom()].
 log_domain() ->
   [mhttp, connection].
+
+-spec call_request_hook(mhttp:request(), mhttp:response(),
+                        mhttp:handler_context(), state()) ->
+        ok.
+call_request_hook(Request, Response, #{start_time := StartTime},
+                  #{options := #{server := Server, request_hook := Hook}}) ->
+  try
+    RequestTime = erlang:system_time(microsecond) - StartTime,
+    Hook(Request, Response, RequestTime, Server)
+  catch
+    Type:Reason ->
+      ?LOG_ERROR("request hook ~s: ~ts", [Type, Reason])
+  end;
+call_request_hook(_, _, _, _) ->
+  ok.
