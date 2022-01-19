@@ -25,24 +25,41 @@
         {error, not_found | term()}.
 find_route(#{routes := Routes}, Request, Context) ->
   case do_find_route(Routes, Request) of
-    {ok, {Route, PathVariables}} ->
-      case Route of
-        {_, Handler} when is_function(Handler) ->
-          {ok, {Route, Context#{path_variables => PathVariables}}};
-        {_, {Handler, Options}} when is_function(Handler) ->
-          Context2 = apply_handler_route_options(Options, Request, Context),
+    {ok, {Route = {Pattern, RouteHandler}, PathVariables}} ->
+      Context2 = update_context_route_id(Context, Pattern),
+      case RouteHandler of
+        Handler when is_function(Handler) ->
           {ok, {Route, Context2#{path_variables => PathVariables}}};
-        {_, {router, Router2}} ->
-          find_route(Router2, Request, Context);
-        {_, {router, Router2, Options}} ->
-          {Request2, Context2} =
-            apply_handler_router_options(Options, Request, Context),
-          find_route(Router2, Request2, Context2)
+        {Handler, Options} when is_function(Handler) ->
+          Context3 = apply_handler_route_options(Options, Request, Context2),
+          {ok, {Route, Context3#{path_variables => PathVariables}}};
+        {router, Router2} ->
+          find_route(Router2, Request, Context2);
+        {router, Router2, Options} ->
+          {Request2, Context3} =
+            apply_handler_router_options(Options, Request, Context2),
+          find_route(Router2, Request2, Context3)
       end;
     {error, not_found} ->
       {error, not_found};
     {error, Reason} ->
       {error, Reason}
+  end.
+
+-spec update_context_route_id(mhttp:handler_context(),
+                              mhttp_patterns:pattern()) ->
+        mhttp:handler_context().
+update_context_route_id(Context = #{route_id := RouteId}, Pattern) ->
+  PathPattern =
+    case mhttp_patterns:path_pattern(Pattern) of
+      <<"/">> -> <<>>;
+      S -> S
+    end,
+  case mhttp_utils:suffix(PathPattern, <<"/...">>) of
+    nomatch ->
+      Context#{route_id => <<RouteId/binary, PathPattern/binary>>};
+    PathPattern2 ->
+      Context#{route_id => <<RouteId/binary, PathPattern2/binary>>}
   end.
 
 -spec do_find_route([mhttp:route()], mhttp:request()) ->

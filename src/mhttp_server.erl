@@ -39,7 +39,7 @@
           request_hook => request_hook()}.
 
 -type request_hook() ::
-        fun((mhttp:request(), mhttp:response(), integer(),
+        fun((mhttp:request(), mhttp:response(), integer(), binary(),
              mhttp:server_id()) -> ok).
 
 -type state() ::
@@ -98,8 +98,9 @@ terminate(_Reason, _State) ->
 handle_call({set_router, Router}, _From, State) ->
   {reply, ok, State#{router => Router}};
 
-handle_call({find_route, Request, Context}, _From,
+handle_call({find_route, Request, Context0}, _From,
             State = #{options := Options, router := Router}) ->
+  Context = Context0#{route_id => <<>>},
   case mhttp_router:find_route(Router, Request, Context) of
     {ok, {Route, Context2}} ->
       {reply, {ok, {Router, Route, Context2}}, State};
@@ -107,7 +108,8 @@ handle_call({find_route, Request, Context}, _From,
       Handler = maps:get(route_not_found_handler, Options,
                          fun mhttp_handlers:route_not_found_handler/2),
       Route = {route_not_found, Handler},
-      {reply, {ok, {Router, Route, Context}}, State};
+      Context2 = Context#{route_id => <<"route_not_found">>},
+      {reply, {ok, {Router, Route, Context2}}, State};
     {error, Reason} ->
       {reply, {error, Reason}, State}
   end;
@@ -117,7 +119,8 @@ handle_call({find_route, _Request, Context}, _From,
   Handler = maps:get(service_unavailable_handler, Options,
                      fun mhttp_handlers:service_unavailable_handler/2),
   Route = {service_unavailable, Handler},
-  {reply, {ok, {Router, Route, Context}}, State};
+  Context2 = Context#{route_id => <<"service_unavailable">>},
+  {reply, {ok, {Router, Route, Context2}}, State};
 
 handle_call(Msg, From, State) ->
   ?LOG_WARNING("unhandled call ~p from ~p", [Msg, From]),

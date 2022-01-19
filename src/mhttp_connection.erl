@@ -244,11 +244,12 @@ log_domain() ->
 -spec call_request_hook(mhttp:request(), mhttp:response(),
                         mhttp:handler_context(), state()) ->
         ok.
-call_request_hook(Request, Response, #{start_time := StartTime},
+call_request_hook(Request, Response,
+                  #{start_time := StartTime, route_id := RouteId},
                   #{options := #{server := Server, request_hook := Hook}}) ->
   try
     RequestTime = erlang:system_time(microsecond) - StartTime,
-    Hook(Request, Response, RequestTime, Server)
+    Hook(Request, Response, RequestTime, RouteId, Server)
   catch
     Type:Reason ->
       ?LOG_ERROR("request hook ~s: ~ts", [Type, Reason])

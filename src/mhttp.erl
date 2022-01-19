@@ -125,6 +125,7 @@
 -type route_pattern() :: route_not_found
                        | service_unavailable
                        | mhttp_patterns:pattern().
+
 -type route() :: {route_pattern(), handler()}.
 
 -type handler_fun() :: fun((request(), handler_context()) -> response()).
@@ -146,6 +147,7 @@
           client_port := inet:port_number(),
           real_client_address := inet:ip_address(),
           route => route(),
+          route_id => binary(),
           path_variables => mhttp_patterns:path_variables(),
           start_time := integer(),
           request_id := binary(),
