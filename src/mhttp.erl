@@ -128,24 +128,32 @@
 -type route() :: {route_pattern(), handler()}.
 
 -type handler_fun() :: fun((request(), handler_context()) -> response()).
--type handler() :: handler_fun()
-                 | {handler_fun(), handler_route_options()}
-                 | {router, mhttp_router:router()}
-                 | {router, mhttp_router:router(), handler_router_options()}.
--type handler_route_options() :: #{disable_request_logging => boolean()}.
--type handler_router_options() :: #{strip_path_prefix => binary()}.
--type handler_context() :: #{client_address := inet:ip_address(),
-                             client_port := inet:port_number(),
-                             real_client_address := inet:ip_address(),
-                             route => route(),
-                             path_variables => mhttp_patterns:path_variables(),
-                             start_time := integer(),
-                             request_id := binary(),
-                             disable_request_logging => boolean()}.
 
--type error_handler() :: fun((request(), handler_context(),
-                              Reason :: term(), [c_erlang:stack_item()]) ->
-                                response()).
+-type handler() ::
+        handler_fun()
+      | {handler_fun(), handler_route_options()}
+      | {router, mhttp_router:router()}
+      | {router, mhttp_router:router(), handler_router_options()}.
+
+-type handler_route_options() ::
+        #{disable_request_logging => boolean()}.
+
+-type handler_router_options() ::
+        #{strip_path_prefix => binary()}.
+
+-type handler_context() ::
+        #{client_address := inet:ip_address(),
+          client_port := inet:port_number(),
+          real_client_address := inet:ip_address(),
+          route => route(),
+          path_variables => mhttp_patterns:path_variables(),
+          start_time := integer(),
+          request_id := binary(),
+          disable_request_logging => boolean()}.
+
+-type error_handler() ::
+        fun((request(), handler_context(), Reason :: term(),
+             [c_erlang:stack_item()]) -> response()).
 
 -spec start_pool(pool_id(), mhttp_pool:options()) ->
         supervisor:startchild_ret().
