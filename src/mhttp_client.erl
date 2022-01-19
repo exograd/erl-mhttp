@@ -213,12 +213,12 @@ host_address(Host) ->
 -spec send_request_1(mhttp:request(), mhttp:request_options(), state()) ->
         {mhttp:request_result(), state()}.
 send_request_1(Request0, RequestOptions, State) ->
-  StartTime = erlang:system_time(microsecond),
+  StartTime = erlang:monotonic_time(microsecond),
   Request = finalize_request(State, Request0, RequestOptions),
   send(State, mhttp_proto:encode_request(Request)),
   set_socket_active(State, false),
   {State2, Response} = read_response(State),
-  RequestTime = erlang:system_time(microsecond) - StartTime,
+  RequestTime = erlang:monotonic_time(microsecond) - StartTime,
   call_request_hook(Request, Response, RequestTime, State),
   log_request(Request, Response, RequestTime, State2),
   case maybe_upgrade(Request, RequestOptions, Response, State2) of

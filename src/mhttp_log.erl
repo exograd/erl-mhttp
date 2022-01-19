@@ -22,7 +22,7 @@
     Domain :: [atom()].
 log_incoming_request(Request, Response, Context, Server, Domain) ->
   StartTime = maps:get(start_time, Context),
-  RequestTime = erlang:system_time(microsecond) - StartTime,
+  RequestTime = erlang:monotonic_time(microsecond) - StartTime,
   Address = maps:get(real_client_address, Context),
   RequestId = maps:get(request_id, Context),
   Data = #{address => inet:ntoa(Address),

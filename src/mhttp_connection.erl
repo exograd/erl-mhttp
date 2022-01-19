@@ -115,7 +115,7 @@ handle_info(Msg, State) ->
 
 -spec handle_request(mhttp:request(), state()) -> state().
 handle_request(Request, State = #{options := Options}) ->
-  Now = erlang:system_time(microsecond),
+  Now = erlang:monotonic_time(microsecond),
   RequestId = case mhttp_request:request_id(Request) of
                 {ok, Id} -> Id;
                 error -> ksuid:generate()
@@ -248,7 +248,7 @@ call_request_hook(Request, Response,
                   #{start_time := StartTime, route_id := RouteId},
                   #{options := #{server := Server, request_hook := Hook}}) ->
   try
-    RequestTime = erlang:system_time(microsecond) - StartTime,
+    RequestTime = erlang:monotonic_time(microsecond) - StartTime,
     Hook(Request, Response, RequestTime, RouteId, Server)
   catch
     Type:Reason ->
