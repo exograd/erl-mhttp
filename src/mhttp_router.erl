@@ -50,14 +50,24 @@ find_route(#{routes := Routes}, Request, Context) ->
                               mhttp_patterns:pattern()) ->
         mhttp:handler_context().
 update_context_route_id(Context = #{route_id := RouteId}, Pattern) ->
-  PathPattern =
+  PathPattern1 =
     case mhttp_patterns:path_pattern(Pattern) of
       <<"/">> -> <<>>;
       S -> S
     end,
-  case mhttp_utils:suffix(PathPattern, <<"/...">>) of
+  %% We look for the final wildcard on the original value, to make sure to
+  %% detect it if we just added the method suffix.
+  case mhttp_utils:suffix(PathPattern1, <<"/...">>) of
     nomatch ->
-      Context#{route_id => <<RouteId/binary, PathPattern/binary>>};
+      PathPattern2 =
+        case mhttp_patterns:method(Pattern) of
+          {ok, Method} ->
+            MethodString = mhttp:method_string(Method),
+            <<PathPattern1/binary, $\s, MethodString/binary>>;
+          error ->
+            PathPattern1
+        end,
+      Context#{route_id => <<RouteId/binary, PathPattern2/binary>>};
     PathPattern2 ->
       Context#{route_id => <<RouteId/binary, PathPattern2/binary>>}
   end.

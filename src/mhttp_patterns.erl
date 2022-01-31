@@ -14,7 +14,7 @@
 
 -module(mhttp_patterns).
 
--export([path_pattern/1, match/2]).
+-export([path_pattern/1, method/1, match/2]).
 
 -export_type([path_pattern/0,
               path_variable_name/0, path_variable_value/0, path_variables/0,
@@ -42,6 +42,14 @@ path_pattern({Pattern, _MethodOrFilters}) ->
   Pattern;
 path_pattern({Pattern, _Method, _Filters}) ->
   Pattern.
+
+-spec method(pattern()) -> {ok, mhttp:method()} | error.
+method({_, Method}) when is_atom(Method); is_binary(Method) ->
+  {ok, Method};
+method({_, Method, _}) when is_atom(Method); is_binary(Method) ->
+  {ok, Method};
+method(_) ->
+  error.
 
 -spec match(pattern(), mhttp:request()) -> match_result().
 match(PathPattern, Request = #{method := Method}) when

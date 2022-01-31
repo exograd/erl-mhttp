@@ -68,11 +68,9 @@ encode_header(Header) ->
 encode_header_field({Name, Value}) ->
   [Name, <<": ">>, Value].
 
--spec encode_method(mhttp:method()) -> iodata().
-encode_method(Method) when is_atom(Method) ->
-  string:uppercase(atom_to_binary(Method));
-encode_method(Method) when is_binary(Method) ->
-  Method.
+-spec encode_method(mhttp:method()) -> binary().
+encode_method(Method) ->
+  mhttp:method_string(Method).
 
 -spec encode_target(mhttp:target()) -> iodata().
 encode_target(Target) when is_map(Target) ->

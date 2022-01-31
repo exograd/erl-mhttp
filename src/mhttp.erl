@@ -18,7 +18,7 @@
          start_server/2, set_server_router/2,
          path_variable/2, request_id/1, route_id/1,
          header_name_equal/2,
-         status/1]).
+         status/1, method_string/1]).
 
 -export_type([result/0, result/1, error_reason/0,
               pool_id/0, server_id/0,
@@ -211,3 +211,9 @@ header_name_equal(N1, N2) ->
 -spec status(status_name()) -> mhttp:status().
 status(Name) ->
   mhttp_statuses:status(Name).
+
+-spec method_string(method()) -> binary().
+method_string(Method) when is_atom(Method) ->
+  string:uppercase(atom_to_binary(Method));
+method_string(Method) when is_binary(Method) ->
+  Method.
