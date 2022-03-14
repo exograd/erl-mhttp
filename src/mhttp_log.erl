@@ -75,7 +75,7 @@ log_request(Request, Response, RequestTime, Domain, Event, ExtraData) ->
 
 -spec format_request_time(Microseconds :: non_neg_integer()) -> binary().
 format_request_time(Microseconds) when Microseconds < 1_000 ->
-  <<(integer_to_binary(Microseconds))/binary, "μs"/utf8>>;
+  <<(integer_to_binary(Microseconds))/binary, "µs"/utf8>>;
 format_request_time(Microseconds) when Microseconds > 1_000_000 ->
   <<(float_to_binary(Microseconds / 1.0e6, [{decimals, 1}]))/binary, "s">>;
 format_request_time(Microseconds) ->
